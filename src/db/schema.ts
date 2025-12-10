@@ -65,20 +65,19 @@ export const users = sqliteTable("users", {
 export const accounts = sqliteTable(
   "accounts",
   {
-    id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     provider: text("provider").notNull(),
-    providerAccountId: text("provider_account_id").notNull(),
-    refreshToken: text("refresh_token"),
-    accessToken: text("access_token"),
-    expiresAt: integer("expires_at"),
-    tokenType: text("token_type"),
+    providerAccountId: text("provider_account_id").notNull().primaryKey(),
+    refresh_token: text("refresh_token"),
+    access_token: text("access_token"),
+    expires_at: integer("expires_at"),
+    token_type: text("token_type"),
     scope: text("scope"),
-    idToken: text("id_token"),
-    sessionState: text("session_state"),
+    id_token: text("id_token"),
+    session_state: text("session_state"),
   },
   (table) => ({
     userIdx: index("user_idx").on(table.userId),
