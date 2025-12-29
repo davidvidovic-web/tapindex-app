@@ -67,6 +67,9 @@ AUTH_GOOGLE_SECRET=your-google-oauth-secret
 
 # Maps API
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+
+# Analytics (Optional)
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
 4. Set up the database:
@@ -230,6 +233,7 @@ Reverse geocode coordinates to city information.
 - `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`: GitHub OAuth credentials
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`: Google OAuth credentials
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`: Google Maps API key
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID`: Google Analytics measurement ID (format: G-XXXXXXXXXX)
 
 ## Deployment
 
