@@ -25,6 +25,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Preload critical map tiles for LCP optimization */}
+        <link rel="preconnect" href="https://a.tile.openstreetmap.org" />
+        <link rel="preconnect" href="https://b.tile.openstreetmap.org" />
+        <link rel="preconnect" href="https://c.tile.openstreetmap.org" />
+        <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org" />
+        <link rel="dns-prefetch" href="https://b.tile.openstreetmap.org" />
+        <link rel="dns-prefetch" href="https://c.tile.openstreetmap.org" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

@@ -88,7 +88,7 @@ export function SearchBar({ cities, onSelect, collapsed = false, onExpandChange 
                   setTimeout(() => handleExpand(false), 200);
                 }
               }}
-              placeholder="Where are you going?"
+              placeholder="Where are you tapping?"
               className="w-full bg-transparent text-sm font-medium text-gray-900 placeholder:text-gray-600 focus:outline-none"
               autoFocus={isExpanded}
             />

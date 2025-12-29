@@ -141,6 +141,11 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, onSelect, selectedCit
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxZoom={19}
+        minZoom={2}
+        keepBuffer={2}
+        updateWhenIdle={false}
+        updateWhenZooming={false}
       />
       <MapController selectedCity={selectedCity} shouldFly={shouldFlyToCity} />
       <MapClickHandler onMapClick={onMapClick} />

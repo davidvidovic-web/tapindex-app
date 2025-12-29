@@ -7,12 +7,13 @@ import { City, Review } from "@/db/schema";
 import { SearchBar } from "@/components/search-bar";
 import { CityPanel } from "@/components/city-panel";
 import { Logo } from "@/components/logo";
+import { MapTilePreload } from "@/components/map-preload";
 
 const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center bg-gray-100">
-      <div className="text-gray-500">Loading map...</div>
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50">
+      <div className="text-gray-700 font-medium">Loading map...</div>
     </div>
   ),
 });
@@ -175,6 +176,9 @@ export default function Home() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
+      {/* Preload map tiles for LCP optimization */}
+      <MapTilePreload />
+      
       {/* Logo - Top Left */}
       <div className="absolute left-4 top-4 z-10 rounded-2xl bg-white/80 px-4 py-2 shadow-lg backdrop-blur-sm">
         <Logo />
