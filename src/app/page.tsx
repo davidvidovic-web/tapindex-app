@@ -240,7 +240,6 @@ export default function Home() {
 
       setShouldFlyToCity(false);
       setSelectedCity(nearestCity);
-      setIsDrawerExpanded(true);
     }
   };
 
