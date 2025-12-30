@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { City, Review } from "@/db/schema";
 import { SearchBar } from "@/components/search-bar";
@@ -44,26 +44,6 @@ const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-// Haversine distance formula to find nearest city
-function getDistance(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
-  const R = 6371; // Earth's radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
 export default function Home() {
   const { data: cityList, mutate: mutateCityList } = useSWR<City[]>(
     "/api/cities?limit=100",
@@ -76,6 +56,24 @@ export default function Home() {
     lng: number;
   } | null>(null);
   const [shouldFlyToCity, setShouldFlyToCity] = useState(true);
+
+  const { data: cityDetails, mutate: mutateCityDetails } = useSWR<{
+    city: City;
+    reviews: Review[];
+  }>(
+    // Don't fetch details for temporary cities (ID "-1")
+    selectedCity && selectedCity.id !== "-1"
+      ? `/api/cities/${selectedCity.id}`
+      : null,
+    fetcher
+  );
+
+  const cities = cityList ?? [];
+  const reviews = cityDetails?.reviews ?? [];
+  const city = useMemo(
+    () => cityDetails?.city ?? selectedCity,
+    [cityDetails, selectedCity]
+  );
 
   // Refs for layout manager
   const logoRef = useRef<HTMLDivElement>(null);
@@ -108,151 +106,128 @@ export default function Home() {
     dependencies: [selectedCity, searchExpanded],
   });
 
-  const handleCitySelect = (city: City) => {
+  const handleCitySelect = useCallback((city: City) => {
     setSelectedCity(city);
     setShouldFlyToCity(true); // Enable flying when selecting from city markers
     setCustomLocation(null); // Clear any custom location
-  };
+  }, []);
 
-  const handleReviewSubmit = async () => {
-    // Refresh both city details and city list to show new review and updated markers
-    await Promise.all([mutateCityDetails(), mutateCityList()]);
-  };
-
-  const handleMapClick = (lat: number, lng: number) => {
+  const handleMapClick = useCallback((lat: number, lng: number) => {
     // Just set the pin location, don't open panel yet
     setCustomLocation({ lat, lng });
     setSelectedCity(null); // Clear any selected city
-  };
+  }, []);
 
-  const handlePinClick = async () => {
+  const handlePinClick = useCallback(async (lat?: number, lng?: number) => {
     // When pin is clicked, geocode the location and open review form
-    if (!customLocation) return;
+    // Use provided coordinates or fall back to customLocation state
+    const coords = (lat !== undefined && lng !== undefined) 
+      ? { lat, lng } 
+      : customLocation;
+    
+    if (!coords) return;
 
     try {
       // Try to geocode the location using Google Maps
       const response = await fetch(
-        `/api/geocode?lat=${customLocation.lat}&lng=${customLocation.lng}`
+        `/api/geocode?lat=${coords.lat}&lng=${coords.lng}`
       );
 
-      if (response.ok) {
-        const geocodedData = await response.json();
+      if (!response.ok) {
+        console.error('Geocoding API error:', response.status, response.statusText);
+        throw new Error(`Geocoding failed: ${response.status}`);
+      }
 
-        // Check if we have this city in our database
-        const existingCity = cities.find(
-          (city) =>
-            city.name === geocodedData.name &&
-            city.country === geocodedData.country
-        );
+      const geocodedData = await response.json();
 
-        if (existingCity) {
-          // Use existing city from database
-          setShouldFlyToCity(false);
-          setSelectedCity(existingCity);
-        } else {
-          // Create a temporary city object for the new location
-          const tempCity: City = {
-            id: "-1", // Temporary ID for new cities
-            name: geocodedData.name,
-            country: geocodedData.country,
-            countryCode: geocodedData.countryCode || "XX",
-            latitude: geocodedData.latitude,
-            longitude: geocodedData.longitude,
-            safetyRating: 0,
-            officialStatus: "unknown",
-            avgSafetyRating: 0,
-            avgTasteRating: 0,
-            reviewCount: 0,
-            phLevel: null,
-            hardness: null,
-            chlorineLevel: null,
-            tds: null,
-            waterSource: null,
-            treatmentProcess: null,
-            localAdvice: null,
-            dataSource: null,
-            lastUpdated: new Date(),
-            createdAt: new Date(),
-          };
+      // Check if we have this city in our database
+      const existingCity = cities.find(
+        (city) =>
+          city.name === geocodedData.name &&
+          city.country === geocodedData.country
+      );
 
-          setShouldFlyToCity(false);
-          setSelectedCity(tempCity);
-        }
+      if (existingCity) {
+        // Use existing city from database but with the exact clicked location
+        setShouldFlyToCity(false);
+        setSelectedCity({
+          ...existingCity,
+          latitude: coords.lat,
+          longitude: coords.lng,
+        });
       } else {
-        // Fallback to nearest city if geocoding fails
-        if (cities.length === 0) return;
-
-        let nearestCity = cities[0];
-        let minDistance = getDistance(
-          customLocation.lat,
-          customLocation.lng,
-          cities[0].latitude,
-          cities[0].longitude
-        );
-
-        for (const city of cities) {
-          const distance = getDistance(
-            customLocation.lat,
-            customLocation.lng,
-            city.latitude,
-            city.longitude
-          );
-          if (distance < minDistance) {
-            minDistance = distance;
-            nearestCity = city;
-          }
-        }
+        // Create a temporary city object with the exact clicked location
+        const tempCity: City = {
+          id: "-1", // Temporary ID for new cities
+          name: geocodedData.name,
+          country: geocodedData.country,
+          countryCode: geocodedData.countryCode || "XX",
+          latitude: coords.lat,
+          longitude: coords.lng,
+          safetyRating: 0,
+          officialStatus: "unknown",
+          avgSafetyRating: 0,
+          avgTasteRating: 0,
+          reviewCount: 0,
+          phLevel: null,
+          hardness: null,
+          chlorineLevel: null,
+          tds: null,
+          waterSource: null,
+          treatmentProcess: null,
+          localAdvice: null,
+          dataSource: null,
+          lastUpdated: new Date(),
+          createdAt: new Date(),
+        };
 
         setShouldFlyToCity(false);
-        setSelectedCity(nearestCity);
+        setSelectedCity(tempCity);
       }
     } catch (error) {
-      // Fallback to nearest city
-      if (cities.length === 0) return;
-
-      let nearestCity = cities[0];
-      let minDistance = getDistance(
-        customLocation.lat,
-        customLocation.lng,
-        cities[0].latitude,
-        cities[0].longitude
-      );
-
-      for (const city of cities) {
-        const distance = getDistance(
-          customLocation.lat,
-          customLocation.lng,
-          city.latitude,
-          city.longitude
-        );
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearestCity = city;
-        }
-      }
+      console.error('Geocoding error:', error);
+      // If error occurs, still use the exact clicked location
+      const tempCity: City = {
+        id: "-1",
+        name: "Unknown Location",
+        country: "Unknown",
+        countryCode: "XX",
+        latitude: coords.lat,
+        longitude: coords.lng,
+        safetyRating: 0,
+        officialStatus: "unknown",
+        avgSafetyRating: 0,
+        avgTasteRating: 0,
+        reviewCount: 0,
+        phLevel: null,
+        hardness: null,
+        chlorineLevel: null,
+        tds: null,
+        waterSource: null,
+        treatmentProcess: null,
+        localAdvice: null,
+        dataSource: null,
+        lastUpdated: new Date(),
+        createdAt: new Date(),
+      };
 
       setShouldFlyToCity(false);
-      setSelectedCity(nearestCity);
+      setSelectedCity(tempCity);
     }
-  };
+  }, [cities]);
 
-  const { data: cityDetails, mutate: mutateCityDetails } = useSWR<{
-    city: City;
-    reviews: Review[];
-  }>(
-    // Don't fetch details for temporary cities (ID "-1")
-    selectedCity && selectedCity.id !== "-1"
-      ? `/api/cities/${selectedCity.id}`
-      : null,
-    fetcher
-  );
+  const handleGeolocation = useCallback((lat: number, lng: number) => {
+    // Use exact geolocation coordinates
+    setCustomLocation({ lat, lng });
+    setShouldFlyToCity(false);
+    // Immediately geocode and open the panel
+    handlePinClick(lat, lng);
+  }, [handlePinClick]);
 
-  const cities = cityList ?? [];
-  const reviews = cityDetails?.reviews ?? [];
-  const city = useMemo(
-    () => cityDetails?.city ?? selectedCity,
-    [cityDetails, selectedCity]
-  );
+  const handleReviewSubmit = useCallback(async () => {
+    // Refresh both city details and city list to show new review and updated markers
+    await Promise.all([mutateCityDetails(), mutateCityList()]);
+  }, [mutateCityDetails, mutateCityList]);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
@@ -282,6 +257,7 @@ export default function Home() {
           <SearchBar
             cities={cities}
             onSelect={handleCitySelect}
+            onGeolocation={handleGeolocation}
             collapsed={!!selectedCity}
             onExpandChange={setSearchExpanded}
           />

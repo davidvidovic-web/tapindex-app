@@ -27,11 +27,12 @@ type SearchResult =
 type Props = {
   cities: City[];
   onSelect: (city: City) => void;
+  onGeolocation?: (lat: number, lng: number) => void;
   collapsed?: boolean;
   onExpandChange?: (expanded: boolean) => void;
 };
 
-export function SearchBar({ cities, onSelect, collapsed = false, onExpandChange }: Props) {
+export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, onExpandChange }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -41,18 +42,40 @@ export function SearchBar({ cities, onSelect, collapsed = false, onExpandChange 
     onExpandChange?.(expanded);
   };
   const [isLoading, setIsLoading] = useState(false);
-  const { latitude, longitude, loading: locationLoading, requestLocation } = useGeolocation();
+  const { latitude, longitude, error: locationError, loading: locationLoading, requestLocation } = useGeolocation();
+  const [showError, setShowError] = useState(false);
 
   const debouncedQuery = useDebounce(query, 200);
 
   useEffect(() => {
-    if (latitude && longitude && cities.length > 0) {
-      const nearestCity = findNearestCity(latitude, longitude, cities);
-      if (nearestCity) {
-        onSelect(nearestCity);
+    if (latitude !== null && longitude !== null) {
+      // Use exact geolocation coordinates if handler is provided
+      if (onGeolocation) {
+        onGeolocation(latitude, longitude);
+      } else if (cities.length > 0) {
+        // Fallback to nearest city if no geolocation handler
+        try {
+          const nearestCity = findNearestCity(latitude, longitude, cities);
+          if (nearestCity) {
+            onSelect(nearestCity);
+          }
+        } catch (err) {
+          // Silently handle error to prevent breaking the UI
+        }
       }
     }
-  }, [latitude, longitude, cities, onSelect]);
+  }, [latitude, longitude, cities, onSelect, onGeolocation]);
+
+  // Show error notification when geolocation fails
+  useEffect(() => {
+    if (locationError) {
+      setShowError(true);
+      const timer = setTimeout(() => {
+        setShowError(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [locationError]);
 
   useEffect(() => {
     if (!debouncedQuery) {
@@ -168,6 +191,13 @@ export function SearchBar({ cities, onSelect, collapsed = false, onExpandChange 
           )}
         </button>
       </div>
+
+      {/* Error notification */}
+      {showError && locationError && (
+        <div className="absolute top-full mt-2 w-full rounded-2xl border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-700 shadow-lg backdrop-blur-sm z-50">
+          {locationError}
+        </div>
+      )}
 
       {results.length > 0 && (
         <ul className="absolute top-full mt-2 w-full divide-y divide-gray-200/50 rounded-3xl border border-white/40 bg-white/60 py-2 shadow-2xl backdrop-blur-xl z-50">
