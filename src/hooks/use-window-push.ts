@@ -10,7 +10,7 @@ export interface LayoutElement {
   /**
    * Reference to the DOM element
    */
-  ref: RefObject<HTMLElement>;
+  ref: RefObject<HTMLElement | null>;
   
   /**
    * Priority/weight of this element (higher = more important, stays in place)
@@ -74,19 +74,19 @@ export interface LayoutStyles {
   zIndex?: number;
 }
 
-export type LayoutResult = Map<RefObject<HTMLElement>, LayoutStyles>;
+export type LayoutResult = Map<RefObject<HTMLElement | null>, LayoutStyles>;
 
 // Legacy interface for backwards compatibility
 export interface WindowPushOptions {
   /**
    * The element that should be pushed when overlapped
    */
-  targetRef: RefObject<HTMLElement>;
+  targetRef: RefObject<HTMLElement | null>;
   
   /**
    * The element that causes the overlap (e.g., a panel, modal, sidebar)
    */
-  overlayRef: RefObject<HTMLElement>;
+  overlayRef: RefObject<HTMLElement | null>;
   
   /**
    * Direction to push the target element
@@ -373,9 +373,9 @@ export function useMultiWindowPush({
   enableTransition = true,
   transitionDuration = 300,
 }: {
-  targetRef: RefObject<HTMLElement>;
+  targetRef: RefObject<HTMLElement | null>;
   overlays: Array<{
-    ref: RefObject<HTMLElement>;
+    ref: RefObject<HTMLElement | null>;
     isVisible?: boolean;
     priority?: number;
   }>;

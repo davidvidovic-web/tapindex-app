@@ -9,7 +9,7 @@ import { useLayoutEffect, useState, RefObject, useCallback, useRef } from "react
  * Higher priority elements stay in place, lower priority elements adjust to avoid them
  */
 export interface LayoutElement {
-  ref: RefObject<HTMLElement>;
+  ref: RefObject<HTMLElement | null>;
   priority?: number; // Higher = more important (default: 1)
   visible?: boolean; // Is element visible? (default: true)
   canMove?: boolean; // Can this element be repositioned? (default: true)
@@ -31,7 +31,7 @@ export interface LayoutStyles {
   zIndex?: number;
 }
 
-export type LayoutResult = Map<RefObject<HTMLElement>, LayoutStyles>;
+export type LayoutResult = Map<RefObject<HTMLElement | null>, LayoutStyles>;
 
 function detectOverlap(rect1: DOMRect, rect2: DOMRect, gap: number): boolean {
   return !(
@@ -181,7 +181,7 @@ export function useLayoutManager({
     }
 
     const positions = resolveCollisions(visibleElements, gap);
-    const newStyles = new Map<RefObject<HTMLElement>, LayoutStyles>();
+    const newStyles = new Map<RefObject<HTMLElement | null>, LayoutStyles>();
     
     currentElements.forEach(el => {
       if (!el.ref.current) return;

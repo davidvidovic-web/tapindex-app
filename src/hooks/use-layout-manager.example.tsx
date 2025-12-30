@@ -46,7 +46,7 @@ export function ExampleUsage() {
         style={layoutStyles.get(searchBarRef)}
         className="absolute top-6 left-1/2 -translate-x-1/2 w-full max-w-xl"
       >
-        <SearchBar />
+        {/* Your search component here */}
       </div>
 
       {/* City panel - medium priority */}
@@ -56,7 +56,7 @@ export function ExampleUsage() {
           style={layoutStyles.get(cityPanelRef)}
           className="absolute right-4 top-4 bottom-4 w-96 bg-white rounded-2xl"
         >
-          <CityPanel />
+          {/* Your panel component here */}
         </div>
       )}
 
@@ -67,12 +67,14 @@ export function ExampleUsage() {
           style={layoutStyles.get(drawerRef)}
           className="absolute bottom-0 left-0 right-0 h-32 bg-white"
         >
-          <Drawer />
+          {/* Your drawer component here */}
         </div>
       )}
 
       {/* Map - no styling needed, fills remaining space */}
-      <Map />
+      <div className="absolute inset-0 bg-gray-200">
+        {/* Your map component here */}
+      </div>
     </div>
   );
 }
