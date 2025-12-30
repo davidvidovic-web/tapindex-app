@@ -2,7 +2,6 @@
 
 import useSWR from "swr";
 import { useMemo, useState, useRef } from "react";
-import { motion, useDragControls, PanInfo } from "framer-motion";
 import dynamic from "next/dynamic";
 import { City, Review } from "@/db/schema";
 import { SearchBar } from "@/components/search-bar";
@@ -10,12 +9,42 @@ import { CityPanel } from "@/components/city-panel";
 import { Logo } from "@/components/logo";
 import { MapTilePreload } from "@/components/map-preload";
 import { useLayoutManager } from "@/hooks/use-layout-manager";
+import { Droplets, Waves } from "lucide-react";
 
 const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50">
-      <div className="text-gray-700 font-medium">Loading map...</div>
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100">
+      <div className="flex flex-col items-center gap-6">
+        {/* Animated water waves */}
+        <div className="relative">
+          {/* Background circles creating ripple effect */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-20 w-20 rounded-full bg-blue-400/20 animate-ping" style={{ animationDuration: "2s" }}></div>
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-16 w-16 rounded-full bg-blue-500/20 animate-ping" style={{ animationDuration: "2s", animationDelay: "0.5s" }}></div>
+          </div>
+          
+          {/* Center droplets icon */}
+          <div className="relative z-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 p-5 shadow-lg">
+            <Droplets className="h-10 w-10 text-white animate-pulse" />
+          </div>
+        </div>
+        
+        {/* Bottom wave animation */}
+        <div className="flex items-center gap-1">
+          <Waves className="h-5 w-5 text-blue-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+          <Waves className="h-5 w-5 text-cyan-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+          <Waves className="h-5 w-5 text-blue-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+        </div>
+        
+        {/* Loading text */}
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-xl font-bold text-gray-800">Loading Map</span>
+          <span className="text-sm text-gray-600">Preparing water quality data</span>
+        </div>
+      </div>
     </div>
   ),
 });
@@ -48,20 +77,17 @@ export default function Home() {
     fetcher
   );
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
-  const [isDrawerExpanded, setIsDrawerExpanded] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [customLocation, setCustomLocation] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
   const [shouldFlyToCity, setShouldFlyToCity] = useState(true);
-  const dragControls = useDragControls();
 
   // Refs for layout manager
   const logoRef = useRef<HTMLDivElement>(null);
   const searchBarRef = useRef<HTMLDivElement>(null);
   const desktopPanelRef = useRef<HTMLDivElement>(null);
-  const mobileDrawerRef = useRef<HTMLDivElement>(null);
 
   // Layout manager: all UI elements push each other, not the map
   const layoutStyles = useLayoutManager({
@@ -84,52 +110,13 @@ export default function Home() {
         visible: !!selectedCity,
         anchorTo: "right",
       },
-      {
-        ref: mobileDrawerRef,
-        priority: 12, // High priority - drawer above search
-        visible: !!selectedCity,
-        anchorTo: "bottom",
-      },
     ],
     gap: 16,
-    dependencies: [selectedCity, searchExpanded, isDrawerExpanded],
+    dependencies: [selectedCity, searchExpanded],
   });
-
-  const handleDragEnd = (
-    event: MouseEvent | TouchEvent | PointerEvent,
-    info: PanInfo
-  ) => {
-    if (isDrawerExpanded) {
-      if (info.offset.y > 100 || info.velocity.y > 500) {
-        setIsDrawerExpanded(false);
-      }
-    } else {
-      if (info.offset.y < -100 || info.velocity.y < -500) {
-        setIsDrawerExpanded(true);
-      }
-    }
-  };
-  const { data: cityDetails, mutate: mutateCityDetails } = useSWR<{
-    city: City;
-    reviews: Review[];
-  }>(
-    // Don't fetch details for temporary cities (ID "-1")
-    selectedCity && selectedCity.id !== "-1"
-      ? `/api/cities/${selectedCity.id}`
-      : null,
-    fetcher
-  );
-
-  const cities = cityList ?? [];
-  const reviews = cityDetails?.reviews ?? [];
-  const city = useMemo(
-    () => cityDetails?.city ?? selectedCity,
-    [cityDetails, selectedCity]
-  );
 
   const handleCitySelect = (city: City) => {
     setSelectedCity(city);
-    setIsDrawerExpanded(false); // Start collapsed on mobile
     setShouldFlyToCity(true); // Enable flying when selecting from city markers
     setCustomLocation(null); // Clear any custom location
   };
@@ -149,19 +136,14 @@ export default function Home() {
     // When pin is clicked, geocode the location and open review form
     if (!customLocation) return;
 
-    console.log("Pin clicked at:", customLocation);
-
     try {
       // Try to geocode the location using Google Maps
       const response = await fetch(
         `/api/geocode?lat=${customLocation.lat}&lng=${customLocation.lng}`
       );
 
-      console.log("Geocode response status:", response.status);
-
       if (response.ok) {
         const geocodedData = await response.json();
-        console.log("Geocoded data:", geocodedData);
 
         // Check if we have this city in our database
         const existingCity = cities.find(
@@ -172,13 +154,10 @@ export default function Home() {
 
         if (existingCity) {
           // Use existing city from database
-          console.log("Found existing city:", existingCity.name);
           setShouldFlyToCity(false);
           setSelectedCity(existingCity);
-          setIsDrawerExpanded(true);
         } else {
           // Create a temporary city object for the new location
-          console.log("Creating new city:", geocodedData.name);
           const tempCity: City = {
             id: "-1", // Temporary ID for new cities
             name: geocodedData.name,
@@ -205,11 +184,8 @@ export default function Home() {
 
           setShouldFlyToCity(false);
           setSelectedCity(tempCity);
-          setIsDrawerExpanded(true);
         }
       } else {
-        const errorData = await response.json();
-        console.error("Geocoding failed:", errorData);
         // Fallback to nearest city if geocoding fails
         if (cities.length === 0) return;
 
@@ -236,10 +212,8 @@ export default function Home() {
 
         setShouldFlyToCity(false);
         setSelectedCity(nearestCity);
-        setIsDrawerExpanded(true);
       }
     } catch (error) {
-      console.error("Error geocoding location:", error);
       // Fallback to nearest city
       if (cities.length === 0) return;
 
@@ -270,6 +244,24 @@ export default function Home() {
     }
   };
 
+  const { data: cityDetails, mutate: mutateCityDetails } = useSWR<{
+    city: City;
+    reviews: Review[];
+  }>(
+    // Don't fetch details for temporary cities (ID "-1")
+    selectedCity && selectedCity.id !== "-1"
+      ? `/api/cities/${selectedCity.id}`
+      : null,
+    fetcher
+  );
+
+  const cities = cityList ?? [];
+  const reviews = cityDetails?.reviews ?? [];
+  const city = useMemo(
+    () => cityDetails?.city ?? selectedCity,
+    [cityDetails, selectedCity]
+  );
+
   return (
     <div className="relative h-screen w-screen overflow-hidden">
       {/* Preload map tiles for LCP optimization */}
@@ -279,7 +271,7 @@ export default function Home() {
       <div 
         ref={logoRef}
         style={layoutStyles.get(logoRef)}
-        className="absolute left-4 bottom-4 rounded-2xl bg-white/80 px-4 py-2 shadow-lg backdrop-blur-sm"
+        className="absolute left-4 bottom-4 rounded-full border border-white/40 bg-white/60 px-4 py-2 shadow-lg backdrop-blur-xl transition-all hover:bg-white/80 hover:shadow-xl"
       >
         <Logo />
       </div>
@@ -289,10 +281,9 @@ export default function Home() {
         ref={searchBarRef}
         style={layoutStyles.get(searchBarRef)}
         className={`
-        absolute left-1/2 flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4
+        absolute left-1/2 flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4 top-6
         transition-all duration-300 ease-out
         ${selectedCity && !searchExpanded ? "max-w-[120px]" : "max-w-xl"}
-        ${isDrawerExpanded ? "top-4" : "top-6"}
       `}
       >
         <div className="flex-1">
@@ -318,98 +309,36 @@ export default function Home() {
         />
       </div>
 
-      {/* City Panel Drawer - Responsive */}
+      {/* City Panel - Unified for all screen sizes */}
       {selectedCity && (
-        <>
-          {/* Mobile: Bottom Sheet */}
-          <motion.div
-            ref={mobileDrawerRef}
-            style={{
-              ...layoutStyles.get(mobileDrawerRef),
-              height: "calc(100vh - 80px)",
-            }}
-            className={`
-              md:hidden absolute left-0 right-0
-              bottom-0
-            `}
-            initial="collapsed"
-            animate={isDrawerExpanded ? "expanded" : "collapsed"}
-            variants={{
-              expanded: { y: 0 },
-              collapsed: { y: "65%" },
-            }}
-            transition={{ type: "spring", damping: 20, stiffness: 500, mass: 0.8 }}
-            drag="y"
-            dragListener={false}
-            dragControls={dragControls}
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={0.1}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="relative h-full">
-              {/* Drag Handle & Click Area - Expanded to make it easier to grab */}
-              <div
-                className="absolute left-0 right-0 top-0 h-16 z-30 touch-none flex items-start justify-center pt-3"
-                onPointerDown={(e) => dragControls.start(e)}
-                onClick={() => !isDrawerExpanded && setIsDrawerExpanded(true)}
-              >
-                <div className="h-1.5 w-12 rounded-full bg-gray-400/60" />
-              </div>
-
-              <div className="h-full overflow-hidden rounded-t-4xl border-t border-white/20 bg-white/60 shadow-2xl backdrop-blur-2xl">
-                <div
-                  className={`h-full overflow-y-auto ${
-                    isDrawerExpanded ? "pt-2" : "pt-0"
-                  }`}
-                >
-                  <CityPanel
-                    city={city}
-                    reviews={reviews}
-                    onReviewSubmit={handleReviewSubmit}
-                    onClose={() => {
-                      setSelectedCity(null);
-                      setIsDrawerExpanded(false);
-                      setCustomLocation(null);
-                    }}
-                    isMobile={true}
-                    isExpanded={isDrawerExpanded}
-                    customLocation={customLocation}
-                  />
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Desktop: Side Panel */}
-          <div
-            ref={desktopPanelRef}
-            style={layoutStyles.get(desktopPanelRef)}
-            className={`
-            hidden md:block absolute bottom-4 top-4 w-full max-w-md overflow-hidden rounded-4xl border border-white/20 bg-white/60 shadow-2xl backdrop-blur-2xl lg:w-96
+        <div
+          ref={desktopPanelRef}
+          style={layoutStyles.get(desktopPanelRef)}
+          className={`
+            absolute overflow-hidden rounded-4xl border border-white/20 bg-white/60 shadow-2xl backdrop-blur-2xl
             transition-all duration-300 ease-out
-            ${
-              searchExpanded
-                ? "md:-right-6 lg:-right-8"
-                : "md:right-4 lg:right-4"
-            }
+            
+            left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md lg:w-96
+            bottom-4 top-4
+            
+            md:left-auto md:translate-x-0 md:right-4
           `}
-          >
-            <div className="h-full overflow-y-auto">
-              <CityPanel
-                city={city}
-                reviews={reviews}
-                onReviewSubmit={handleReviewSubmit}
-                onClose={() => {
-                  setSelectedCity(null);
-                  setCustomLocation(null);
-                }}
-                isMobile={false}
-                isExpanded={true}
-                customLocation={customLocation}
-              />
-            </div>
+        >
+          <div className="h-full overflow-y-auto">
+            <CityPanel
+              city={city}
+              reviews={reviews}
+              onReviewSubmit={handleReviewSubmit}
+              onClose={() => {
+                setSelectedCity(null);
+                setCustomLocation(null);
+              }}
+              isMobile={false}
+              isExpanded={true}
+              customLocation={customLocation}
+            />
           </div>
-        </>
+        </div>
       )}
     </div>
   );

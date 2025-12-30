@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { ReviewForm } from "./review-form";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 
 type Props = {
@@ -41,17 +41,20 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
   const SafetyIcon = getSafetyIcon(city.officialStatus);
 
   return (
-    <>
+    <div className="relative">
       <button
-        onClick={() => (showReviewForm ? setShowReviewForm(false) : onClose())}
-        className="absolute right-5 top-5 z-50 rounded-full bg-black/5 p-2 text-gray-500 backdrop-blur-md transition-colors hover:bg-black/10 hover:text-gray-900"
+        onClick={(e) => {
+          e.stopPropagation();
+          showReviewForm ? setShowReviewForm(false) : onClose();
+        }}
+        className="sticky top-5 right-5 z-[100] float-right rounded-full bg-black/5 p-2 text-gray-500 backdrop-blur-md transition-colors hover:bg-black/10 hover:text-gray-900"
         aria-label={showReviewForm ? "Close form" : "Close panel"}
       >
         <X className="h-5 w-5" />
       </button>
 
       {showReviewForm ? (
-        <div className="min-h-full p-6">
+        <div className="min-h-full p-6 clear-both">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">Write a review for {city.name}</h2>
           </div>
@@ -104,22 +107,16 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
           ) : (
             <>
               {/* Full View - Desktop or Expanded Mobile */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="pr-8">
                   <h2 className="text-3xl font-bold text-gray-900">{city.name}</h2>
                   <p className="text-lg text-gray-700">{city.country}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-gray-600" />
-                  <p className="text-base font-semibold text-gray-900">
-                    {city.reviewCount || 0} {city.reviewCount === 1 ? 'Review' : 'Reviews'}
-                  </p>
-                </div>
                 <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs text-gray-600">Last updated</p>
-                    <p className="text-sm font-medium text-gray-800">
-                      {formatDate(city.lastUpdated)}
+                  <div className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-gray-600" />
+                    <p className="text-base font-semibold text-gray-900">
+                      {city.reviewCount || 0} {city.reviewCount === 1 ? 'Review' : 'Reviews'}
                     </p>
                   </div>
                   <button
@@ -290,7 +287,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
           )}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -345,6 +342,9 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function ReviewCard({ review }: { review: Review }) {
+  // Memoize formatted date to avoid recalculating on every render
+  const formattedDate = useMemo(() => formatDate(review.createdAt), [review.createdAt]);
+  
   return (
     <div className="rounded-3xl bg-white/60 p-5 backdrop-blur-md transition-all hover:bg-white/70">
       <div className="flex items-start justify-between gap-4">
@@ -373,7 +373,14 @@ function ReviewCard({ review }: { review: Review }) {
           </div>
           <div className="text-center">
             <div className="flex items-center gap-1.5">
-              <GlassWater className={`h-6 w-6 ${getRatingColor(review.tasteRating).fill} ${getRatingColor(review.tasteRating).textColor}`} />
+              <div
+                className="h-6 w-6"
+                style={{
+                  filter: getRatingColor(review.tasteRating).filter
+                }}
+              >
+                <GlassWater className="h-full w-full" />
+              </div>
               <span className="text-xl font-bold text-gray-900">
                 {review.tasteRating}
               </span>
@@ -382,9 +389,7 @@ function ReviewCard({ review }: { review: Review }) {
           </div>
         </div>
         <div className="text-right text-xs text-gray-600">
-          {review.visitDate && (
-            <p>Visited {formatDate(review.visitDate)}</p>
-          )}
+          <p>{formattedDate}</p>
         </div>
       </div>
 

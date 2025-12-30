@@ -151,6 +151,9 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, onSelect, selectedCit
       center={[20, 0]}
       zoom={3}
       style={{ height: "100%", width: "100%" }}
+      whenReady={() => {
+        // Map is ready
+      }}
     >
       <MapRefHandler onMapReady={handleMapReady} />
       <TileLayer
