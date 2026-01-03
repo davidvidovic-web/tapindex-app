@@ -127,6 +127,10 @@ export default function Home() {
   const handleDrawerTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
     setTouchStart({ y: touch.clientY, time: Date.now() });
+    // Prevent pull-to-refresh when interacting with drawer handle
+    if (e.cancelable) {
+      e.preventDefault();
+    }
   };
 
   const handleDrawerTouchEnd = (e: React.TouchEvent) => {
@@ -160,6 +164,22 @@ export default function Home() {
   };
 
   // Content area touch handlers (for swiping within drawer content)
+  const handleContentTouchMove = (e: React.TouchEvent) => {
+    const target = e.currentTarget as HTMLDivElement;
+    const isAtTop = target.scrollTop === 0;
+    
+    if (isAtTop) {
+      const touch = e.touches[0];
+      const initialY = parseFloat(target.dataset.initialTouchY || '0');
+      const deltaY = touch.clientY - initialY;
+      
+      // If swiping down (positive deltaY) when at top, prevent pull-to-refresh
+      if (deltaY > 0 && e.cancelable) {
+        e.preventDefault();
+      }
+    }
+  };
+
   const handleContentTouchStart = (e: React.TouchEvent) => {
     // Only handle if scrolled to top and swiping down, or if handle interaction
     const touch = e.touches[0];
@@ -168,6 +188,13 @@ export default function Home() {
     
     if (isAtTop || drawerFullScreen) {
       setTouchStart({ y: touch.clientY, time: Date.now() });
+    }
+    
+    // Prevent pull-to-refresh when at top of drawer content
+    if (isAtTop && e.cancelable) {
+      const touchY = touch.clientY;
+      // Store initial touch for comparison in touchmove
+      (e.currentTarget as HTMLDivElement).dataset.initialTouchY = touchY.toString();
     }
   };
 
@@ -589,7 +616,11 @@ export default function Home() {
             exit={{ y: "100%" }}
             transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
             className="fixed bottom-0 left-0 right-0 z-20 flex flex-col bg-white shadow-2xl"
-            style={{ borderRadius: drawerFullScreen ? "0" : drawerExpanded ? "0.5rem 0.5rem 0 0" : "1.5rem 1.5rem 0 0" }}
+            style={{ 
+              borderRadius: drawerFullScreen ? "0" : drawerExpanded ? "0.5rem 0.5rem 0 0" : "1.5rem 1.5rem 0 0",
+              overscrollBehavior: 'none',
+              touchAction: 'none'
+            }}
           >
             {/* Drawer Handle - Hidden when full screen */}
             {!drawerFullScreen && (
@@ -616,6 +647,7 @@ export default function Home() {
             <div 
               className={`flex-1 ${drawerExpanded || drawerFullScreen ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
               onTouchStart={handleContentTouchStart}
+              onTouchMove={handleContentTouchMove}
               onTouchEnd={handleContentTouchEnd}
               onScroll={handleDrawerScroll}
             >
