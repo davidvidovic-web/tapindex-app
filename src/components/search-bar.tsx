@@ -98,16 +98,16 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
         // Fetch from both sources in parallel
         const [dbRes, googleRes] = await Promise.all([
           fetch(`/api/cities?search=${encodeURIComponent(debouncedQuery)}&limit=5`, { signal: controller.signal }),
-          fetch(`/api/places/autocomplete?input=${encodeURIComponent(debouncedQuery)}`, { signal: controller.signal })
+          fetch(`/api/places/autocomplete?input=${encodeURIComponent(debouncedQuery)}`, { signal: controller.signal }).catch(() => null)
         ]);
 
         const dbData = dbRes.ok ? ((await dbRes.json()) as City[]) : [];
         let googleData: GooglePlaceSuggestion[] = [];
 
-        if (googleRes.ok) {
-          const googleJson = await googleRes.json();
+        if (googleRes && googleRes.ok) {
+          const googleJson = await googleRes.json().catch(() => null);
           // V1 API returns { suggestions: [...] }
-          if (googleJson.suggestions) {
+          if (googleJson && googleJson.suggestions) {
             googleData = googleJson.suggestions;
           }
         }
@@ -180,14 +180,17 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
               style={{ fontSize: '16px' }}
               autoFocus={isExpanded}
             />
-            {query && (
+            {isExpanded && (
               <button
                 onClick={() => {
                   setQuery("");
                   setResults([]);
+                  if (collapsed) {
+                    handleExpand(false);
+                  }
                 }}
                 className="mr-2 flex items-center justify-center rounded-full p-1 text-gray-600 transition-colors hover:bg-black/5 hover:text-gray-900"
-                title="Clear search"
+                title={query ? "Clear search" : "Close search"}
               >
                 <X className="h-4 w-4" />
               </button>

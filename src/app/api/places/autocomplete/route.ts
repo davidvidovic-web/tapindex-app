@@ -39,8 +39,9 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("Places API Error:", response.status, errorData);
-      throw new Error(`Places API request failed with status ${response.status}`);
+      console.warn("Places API Error (falling back to city search only):", response.status, errorData);
+      // Return empty results instead of throwing, so the frontend can continue with city-only results
+      return NextResponse.json({ suggestions: [] }, { status: 200 });
     }
 
     const data = await response.json();

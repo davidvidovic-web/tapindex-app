@@ -8,15 +8,22 @@ export default auth((req: NextRequest & { auth?: any }) => {
   // Protect dashboard routes
   if (pathname.startsWith("/dashboard")) {
     if (!req.auth) {
-      const loginUrl = new URL("/admin/login", req.url);
-      loginUrl.searchParams.set("callbackUrl", req.url);
+      // Use absolute URL construction with fallback to NEXT_PUBLIC_SITE_URL
+      const baseUrl = req.url.startsWith('http') 
+        ? new URL(req.url).origin 
+        : process.env.NEXT_PUBLIC_SITE_URL || 'https://tapwaterrating.com';
+      const loginUrl = new URL("/admin/login", baseUrl);
+      loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
     
     // Check if user has admin role
     if (req.auth?.user?.role !== "admin") {
-      const loginUrl = new URL("/admin/login", req.url);
-      loginUrl.searchParams.set("callbackUrl", req.url);
+      const baseUrl = req.url.startsWith('http') 
+        ? new URL(req.url).origin 
+        : process.env.NEXT_PUBLIC_SITE_URL || 'https://tapwaterrating.com';
+      const loginUrl = new URL("/admin/login", baseUrl);
+      loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
   }
