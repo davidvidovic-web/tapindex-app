@@ -41,17 +41,17 @@ function MapController({ selectedCity, shouldFly }: { selectedCity?: City | null
       );
       
       // Determine zoom level based on distance
-      // Closer locations: maintain or increase zoom, far locations: zoom out
+      // For search results, zoom in very close (16-17 for street-level view)
       let targetZoom: number;
       if (distance < 0.01) {
-        // Very close (< ~1km): maintain current zoom or go to 15
-        targetZoom = Math.max(currentZoom, 15);
+        // Very close (< ~1km): zoom to street level
+        targetZoom = 17;
       } else if (distance < 0.1) {
-        // Close (< ~11km): maintain current zoom or go to 13
-        targetZoom = Math.max(currentZoom, 13);
+        // Close (< ~11km): zoom to neighborhood level
+        targetZoom = 15;
       } else if (distance < 1) {
-        // Medium close (< ~111km): maintain if high, otherwise 12
-        targetZoom = currentZoom >= 10 ? currentZoom : 12;
+        // Medium close (< ~111km): zoom to city level
+        targetZoom = 13;
       } else if (distance < 5) {
         // Medium distance (< ~555km): zoom to 10
         targetZoom = 10;
