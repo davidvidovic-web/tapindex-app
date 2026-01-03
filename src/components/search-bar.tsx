@@ -176,7 +176,8 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                 }
               }}
               placeholder="Where are you tapping?"
-              className="w-full bg-transparent text-sm font-medium text-gray-900 placeholder:text-gray-600 focus:outline-none"
+              className="w-full bg-transparent text-base font-medium text-gray-900 placeholder:text-gray-600 focus:outline-none"
+              style={{ fontSize: '16px' }}
               autoFocus={isExpanded}
             />
             {query && (
