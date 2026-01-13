@@ -1,15 +1,14 @@
 "use client";
 
 import { Droplets } from "lucide-react";
-import { useRef } from "react";
 
 export function Logo() {
   return (
-    <div className="logo-glass backdrop-blur flex items-center gap-3 px-5 h-[64px] rounded-full">
-      <div className="rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 p-2">
-        <Droplets className="h-5 w-5 text-white" />
+    <div className="logo-glass backdrop-blur flex items-center gap-1.5 px-3 h-[44px] rounded-full">
+      <div className="rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 p-1">
+        <Droplets className="h-3.5 w-3.5 text-white" />
       </div>
-      <span className="text-xl font-bold text-gray-800 dark:text-gray-100">TWR</span>
+      <span className="text-base font-bold text-gray-800 dark:text-gray-100">TWR</span>
     </div>
   );
 }
