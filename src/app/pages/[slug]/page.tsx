@@ -58,7 +58,7 @@ export default function PageView() {
         {/* Page Header */}
         <article className="space-y-6">
           <header className="space-y-4">
-            <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
+            <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight" style={{ fontFamily: "'Inter', sans-serif" }}>
               {page.title}
             </h1>
 

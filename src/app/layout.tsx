@@ -107,6 +107,11 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#3b82f6" />
 
+        {/* Google Fonts */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
+
         {/* Preload critical map tiles for LCP optimization */}
         <link rel="preconnect" href="https://a.tile.openstreetmap.org" />
         <link rel="preconnect" href="https://b.tile.openstreetmap.org" />

@@ -72,7 +72,7 @@ export default function PostPage() {
               <span>{post.viewCount || 0} views</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent leading-tight" style={{ fontFamily: "'Inter', sans-serif" }}>
               {post.title}
             </h1>
 

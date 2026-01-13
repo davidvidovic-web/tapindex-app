@@ -129,6 +129,26 @@ body {
     color 400ms cubic-bezier(1, 0, 0.4, 1);
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* Apply Inter font to prose headings */
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  font-family: 'Inter', sans-serif !important;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+}
+
 .dark body {
   --c-glass: #bbbbbc;
   --c-light: #fff;
@@ -392,7 +412,7 @@ body {
   height: 44px;
   box-sizing: border-box;
   isolation: isolate;
-  padding: 4px;
+  padding: 5px 7px;
   margin: 0;
   border: none;
   border-radius: 99em;
